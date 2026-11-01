@@ -19,6 +19,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_encoders/msg/image_tokens.hpp>
+#include <vision_encoders/aspect_crop.hpp>
 #include <vision_encoders/camera_tcp.hpp>
 #include <vision_encoders/frame_wire.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -306,6 +307,18 @@ private:
     // Resize once to the manifest input, only if needed. All remaining preprocessing
     // (cast, /255, BGR->RGB, layout, norm) lives inside the graph.
     if (frame.cols != manifest_.width || frame.rows != manifest_.height) {
+      const auto crop = vision_encoders::aspect_center_crop(
+          frame.cols, frame.rows, manifest_.width, manifest_.height);
+      if (crop.width != frame.cols || crop.height != frame.rows) {
+        RCLCPP_WARN_THROTTLE(
+            this->get_logger(), *this->get_clock(), 5000,
+            "camera %dx%d is not the encoder's %dx%d aspect: center-cropping to "
+            "%dx%d, which NARROWS the field of view. Stream a native aspect-"
+            "matched mode instead (camera_streamer.py --color-size).",
+            frame.cols, frame.rows, manifest_.width, manifest_.height, crop.width,
+            crop.height);
+        frame = frame(cv::Rect(crop.x, crop.y, crop.width, crop.height));
+      }
       cv::resize(frame, frame, cv::Size(manifest_.width, manifest_.height));
     }
     if (!frame.isContinuous()) frame = frame.clone();

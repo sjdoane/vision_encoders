@@ -92,6 +92,11 @@ if(VISION_ENCODERS_BUILD_RUNTIME)
   target_compile_features(cuda_provider_check PUBLIC cxx_std_17)
   target_link_libraries(cuda_provider_check onnxruntime)
 
+  # ROS-free regression check of the camera aspect guard.
+  add_executable(aspect_crop_test tests/aspect_crop_test.cpp)
+  target_compile_features(aspect_crop_test PUBLIC cxx_std_17)
+  target_include_directories(aspect_crop_test PRIVATE include)
+
   # The node lives in lib/<PROJECT_NAME>/ but ORT + CUDA libs install to lib/.
   # Set RPATH so the dynamic linker finds them relative to the binary.
   set_target_properties(encoder_node cuda_provider_check PROPERTIES

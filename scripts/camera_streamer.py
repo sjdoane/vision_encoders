@@ -55,7 +55,9 @@ import cv2
 import numpy as np
 import pyrealsense2 as rs
 
-WIDTH, HEIGHT, FPS = 640, 480, 60
+# Native 16:9, the 112x63 aspect policies render in training. 640x480 is a side
+# crop of the same sensor, which encoder_node would then squash or crop.
+DEFAULT_COLOR_SIZE, FPS = "848x480", 60
 PORT = 5555
 
 # JPEG: ~50-100 KB/frame, ~2-5 ms encode on Orin (60 Hz capable).
@@ -156,6 +158,8 @@ def main():
                     help="frame codec (default: jpeg)")
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="log per-second fps, payload size, client counts")
+    ap.add_argument("--color-size", default=DEFAULT_COLOR_SIZE,
+                    help=f"color and depth stream WxH (default: {DEFAULT_COLOR_SIZE})")
     ap.add_argument("--depth", action="store_true",
                     help="attach a depth plane (multi-plane wire) — needed by the repose planner")
     ap.add_argument("--depth-size", default="160x120",
@@ -166,6 +170,7 @@ def main():
 
     ext, encode_params = ENCODERS[args.codec]
     codec_fmt = FMT_JPEG if args.codec == "jpeg" else FMT_PNG
+    WIDTH, HEIGHT = (int(v) for v in args.color_size.lower().split("x"))
     dw, dh = (int(v) for v in args.depth_size.lower().split("x"))
     depth_period = FPS / max(args.depth_hz, 1e-6)
 
